@@ -1,80 +1,134 @@
-// Dependencies
 var express = require("express");
-var mongojs = require("mongojs");
+var logger = require("morgan");
+var mongoose = require("mongoose");
+
+// Our scraping tools
+// Axios is a promised-based http library, similar to jQuery's Ajax method
+// It works on the client and on the server
+var axios = require("axios");
+var cheerio = require("cheerio");
+
+// Require all models
+var db = require("./models");
+
+var PORT = process.env.PORT || 3000;
 
 // Initialize Express
 var app = express();
 
-// Set up a static folder (public) for our web app
+// Configure middleware
+
+// Use morgan logger for logging requests
+app.use(logger("dev"));
+// Parse request body as JSON
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+// Make public a static folder
 app.use(express.static("public"));
 
-// Database configuration
-// Save the URL of our database as well as the name of our collection
-var databaseUrl = "zoo";
-var collections = ["animals"];
+// // Connect to the Mongo DB
+// // If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/BreakingNews";
 
-// Use mongojs to hook the database to the db variable
-var db = mongojs(databaseUrl, collections);
-
-// This makes sure that any errors are logged if mongodb runs into an issue
-db.on("error", function(error) {
-  console.log("Database Error:", error);
-});
+mongoose.connect(MONGODB_URI);
 
 // Routes
-// 1. At the root path, send a simple hello world message to the browser
-app.get("/", function(req, res) {
-  res.send("Hello world");
-});
 
-// 2. At the "/all" path, display every entry in the animals collection
-app.get("/all", function(req, res) {
-  // Query: In our database, go to the animals collection, then "find" everything
-  db.animals.find({}, function(error, found) {
-    // Log any errors if the server encounters one
-    if (error) {
-      console.log(error);
-    }
-    // Otherwise, send the result of this query to the browser
-    else {
-      res.json(found);
-    }
+// A GET route for scraping the echoJS website
+app.get("/scrape", function(req, res) {
+  // First, we grab the body of the html with axios
+  axios.get("https://medium.com/topic/technology").then(function(response) {
+    // Then, we load that into cheerio and save it to $ for a shorthand selector
+    var $ = cheerio.load(response.data);
+
+    // Now, we grab every h2 within an article tag, and do the following:
+    $("h5").each(function(i, element) {
+      // Save an empty result object
+      var result = {};
+
+      // Add the text and href of every link, and save them as properties of the result object
+      result.title = $(this)
+        .children("a")
+        .text();
+      result.link = $(this)
+        .children("a")
+        .attr("href");
+
+      // Create a new Article using the `result` object built from scraping
+      db.Article.create(result)
+        .then(function(dbArticle) {
+          // View the added result in the console
+          console.log(dbArticle);
+        })
+        .catch(function(err) {
+          // If an error occurred, log it
+          console.log(err);
+        });
+    });
+
+    // Send a message to the client
+    res.send("Scrape Complete!");
   });
 });
 
-// 3. At the "/name" path, display every entry in the animals collection, sorted by name
-app.get("/name", function(req, res) {
-  // Query: In our database, go to the animals collection, then "find" everything,
-  // but this time, sort it by name (1 means ascending order)
-  db.animals.find().sort({ name: 1 }, function(error, found) {
-    // Log any errors if the server encounters one
-    if (error) {
-      console.log(error);
-    }
-    // Otherwise, send the result of this query to the browser
-    else {
-      res.json(found);
-    }
+// Route for getting all Articles from the db
+app.get("/articles", function(req, res) {
+  // TODO: Finish the route so it grabs all of the articles
+    // Find all results from the scrapedData collection in the db
+    db.Article.find()
+      // Throw any errors to the console
+      .then(function(dbmedium) {
+        // If any Libraries are found, send them to the client with any associated Books
+        res.json(dbmedium);
+      })
+      .catch(function(err) {
+        // If an error occurs, send it back to the client
+        res.json(err);
+      });
+});
+
+// Route for grabbing a specific Article by id, medium it with it's note
+app.get("/articles/:id", function(req, res) {
+  // TODO
+  // ====
+  // Finish the route so it finds one article using the req.params.id,
+  // and run the medium method with "note",
+  // then responds with the article with the note included
+  db.Article.findById(req.params.id)
+  .medium("note")
+  .then(function(dbmedium) {
+    // If any Libraries are found, send them to the client with any associated Books
+    res.json(dbmedium);
+  })
+  .catch(function(err) {
+    // If an error occurs, send it back to the client
+    res.json(err);
   });
 });
 
-// 4. At the "/weight" path, display every entry in the animals collection, sorted by weight
-app.get("/weight", function(req, res) {
-  // Query: In our database, go to the animals collection, then "find" everything,
-  // but this time, sort it by weight (-1 means descending order)
-  db.animals.find().sort({ weight: -1 }, function(error, found) {
-    // Log any errors if the server encounters one
-    if (error) {
-      console.log(error);
-    }
-    // Otherwise, send the result of this query to the browser
-    else {
-      res.json(found);
-    }
-  });
+// Route for saving/updating an Article's associated Note
+app.post("/articles/:id", function(req, res) {
+  // TODO
+  // ====
+  // save the new note that gets posted to the Notes collection
+  // then find an article from the req.params.id
+  // and update it's "note" property with the _id of the new note
+  db.Note.create(req.body)
+    .then(function(dbmedium) {
+      
+      return db.Article.findOneAndUpdate({_id: req.params.id}, { $push: { note: dbmedium._id } }, { new: true });
+    })
+    .then(function(dbmedium) {
+      // If the Library was updated successfully, send it back to the client
+      res.json(dbmedium);
+    })
+    .catch(function(err) {
+      // If an error occurs, send it back to the client
+      res.json(err);
+    });
 });
 
-// Set the app to listen on port 3000
-app.listen(3000, function() {
-  console.log("App running on port 3000!");
+// Start the server
+app.listen(PORT, function() {
+  console.log("App running on port " + PORT + "!");
 });
