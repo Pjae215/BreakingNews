@@ -15,8 +15,9 @@ app.engine('handlebars', exphbs());
 app.set('view engine', 'handlebars');
 
 // Setup database
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost/newyorker';
-mongoose.connect(MONGODB_URI, {useNewUrlParser: true});
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
+mongoose.connect(MONGODB_URI);
 const Article = models.Article;
 const Comment = models.Comment;
 
