@@ -26,8 +26,8 @@ app.use(express.json());
 // Make public a static folder
 app.use(express.static("public"));
 
-// // Connect to the Mongo DB
-// // If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+// Connect to the Mongo DB
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
 var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
 
 mongoose.connect(MONGODB_URI);
@@ -37,7 +37,7 @@ mongoose.connect(MONGODB_URI);
 // A GET route for scraping the echoJS website
 app.get("/scrape", function(req, res) {
   // First, we grab the body of the html with axios
-  axios.get("https://medium.com/topic/technology").then(function(response) {
+  axios.get("http://www.bioethics.net/news").then(function(response) {
     // Then, we load that into cheerio and save it to $ for a shorthand selector
     var $ = cheerio.load(response.data);
 
@@ -77,9 +77,9 @@ app.get("/articles", function(req, res) {
     // Find all results from the scrapedData collection in the db
     db.Article.find()
       // Throw any errors to the console
-      .then(function(dbmedium) {
+      .then(function(dbPopulate) {
         // If any Libraries are found, send them to the client with any associated Books
-        res.json(dbmedium);
+        res.json(dbPopulate);
       })
       .catch(function(err) {
         // If an error occurs, send it back to the client
@@ -87,18 +87,18 @@ app.get("/articles", function(req, res) {
       });
 });
 
-// Route for grabbing a specific Article by id, medium it with it's note
+// Route for grabbing a specific Article by id, populate it with it's note
 app.get("/articles/:id", function(req, res) {
   // TODO
   // ====
   // Finish the route so it finds one article using the req.params.id,
-  // and run the medium method with "note",
+  // and run the populate method with "note",
   // then responds with the article with the note included
   db.Article.findById(req.params.id)
-  .medium("note")
-  .then(function(dbmedium) {
+  .populate("note")
+  .then(function(dbPopulate) {
     // If any Libraries are found, send them to the client with any associated Books
-    res.json(dbmedium);
+    res.json(dbPopulate);
   })
   .catch(function(err) {
     // If an error occurs, send it back to the client
@@ -114,13 +114,13 @@ app.post("/articles/:id", function(req, res) {
   // then find an article from the req.params.id
   // and update it's "note" property with the _id of the new note
   db.Note.create(req.body)
-    .then(function(dbmedium) {
+    .then(function(dbPopulate) {
       
-      return db.Article.findOneAndUpdate({_id: req.params.id}, { $push: { note: dbmedium._id } }, { new: true });
+      return db.Article.findOneAndUpdate({_id: req.params.id}, { $push: { note: dbPopulate._id } }, { new: true });
     })
-    .then(function(dbmedium) {
+    .then(function(dbPopulate) {
       // If the Library was updated successfully, send it back to the client
-      res.json(dbmedium);
+      res.json(dbPopulate);
     })
     .catch(function(err) {
       // If an error occurs, send it back to the client
