@@ -6,7 +6,7 @@ var cheerio = require("cheerio");
 
 function scrape(callback) {
     console.log("Scraping The New Yorker...");
-    axios.get("https://www.newyorker.com/latest/news")
+    axios.get("https://www.newyorker.com/news")
         .then((response) => {
             console.log("Received " + response.status + " " + response.statusText);
             var html = response.data;
@@ -14,6 +14,7 @@ function scrape(callback) {
             // Parse html using Cheerio library
             var $ = cheerio.load(html);
             var articles = $("li.River__riverItem___3huWr");
+            // list items under each section are labeled the same
             console.log("Found " + articles.length + " articles");
 
             var newsArticles = [];
@@ -25,14 +26,8 @@ function scrape(callback) {
                 var description = article.find("h5").text();
                 var date = article.find("h6").text();
                 var img_url = article.find("img").attr("src");
-                var url = article.find("a.Link__link___3dWao").attr("href");
+                var url = article.find("a.Link__link___3dWao").attr("href"); // links are labeled the same under each section
 
-                // console.log("----------");
-                // console.log("Heading: " + heading);
-                // console.log("Description; " + description);
-                // console.log("Date: " + date);
-                // console.log("URL: https://www.newyorker.com" + url);
-                // console.log("Image URL: " + img_url);
 
                 var newsArticle = {
                     heading: heading,
