@@ -1,10 +1,10 @@
-const mongoose = require("mongoose");
+var mongoose = require("mongoose");
 
-const commentSchema = new mongoose.Schema({
+var commentSchema = new mongoose.Schema({
     text: String,
     date: Date
 });
 
-const Comment = mongoose.model("Comment", commentSchema);
+var Comment = mongoose.model("Comment", commentSchema);
 
 module.exports = Comment;

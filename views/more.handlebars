@@ -1,27 +1,6 @@
-<!--
-{
-    _id: '',
-    heading: '',
-    description: ''
-    url: '',
-    img_url: '',
-    comments: [
-        {
-            _id: '',
-            text: '',
-            date: Date
-        },
-        {
-            _id: '',
-            text: '',
-            date: Date
-        }
-    ]
-}
--->
 
 <div>
-    <a href="/">< Back</a>
+    <a href="/"> Back</a>
     <br><br>
 </div>
 
@@ -39,7 +18,7 @@
 <hr>
 <form class="form" action="/articles/{{_id}}/comments" method="POST">
     <div class="form-group">
-        <label for="newComment">Add new comment:</label>
+        <label for="newComment">Add a new comment:</label>
         <textarea name="text" id="newComment" class="form-control" required></textarea>
     </div>
     <input type="submit" value="Comment" class="btn btn-primary">
@@ -50,7 +29,7 @@
 {{#each comments}}
     <div class="comment">
         <p class="date">{{date}}</p>
-        <button class="btn btn-danger" style="float: right" onclick="deleteComment('{{../_id}}', '{{_id}}')">Delete</button>
+        <button class="btn btn-danger" style="float: right" onclick="deleteComment('{{../_id}}', '{{_id}}')">Delete Comment</button>
         <p>{{text}}</p>
     </div>
 {{/each}}

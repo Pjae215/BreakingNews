@@ -1,19 +1,19 @@
 // newyorker.js
 // Scrapes The New Yorker website's Latest News section
 
-const axios = require("axios");
-const cheerio = require("cheerio");
+var axios = require("axios");
+var cheerio = require("cheerio");
 
 function scrape(callback) {
     console.log("Scraping The New Yorker...");
     axios.get("https://www.newyorker.com/latest/news")
         .then((response) => {
             console.log("Received " + response.status + " " + response.statusText);
-            const html = response.data;
+            var html = response.data;
 
             // Parse html using Cheerio library
-            const $ = cheerio.load(html);
-            const articles = $("li.River__riverItem___3huWr");
+            var $ = cheerio.load(html);
+            var articles = $("li.River__riverItem___3huWr");
             console.log("Found " + articles.length + " articles");
 
             var newsArticles = [];
