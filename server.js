@@ -1,14 +1,16 @@
-const express = require("express");
-const exphbs = require("express-handlebars");
-const mongoose = require("mongoose");
-const newyorker = require("./news");
-const models = require("./models");
+var express = require("express");
+var exphbs = require("express-handlebars");
+var mongoose = require("mongoose");
+var newyorker = require("./news");
+var models = require("./models");
+var logger = require("morgan");
 
-const app = express();
+var app = express();
 
 // Middleware
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
+app.use(logger("dev"));
 
 // Handlebars
 app.engine('handlebars', exphbs());
@@ -17,9 +19,10 @@ app.set('view engine', 'handlebars');
 // Setup database
 // If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
 var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
-mongoose.connect(MONGODB_URI);
-const Article = models.Article;
-const Comment = models.Comment;
+// Connect to the Mongo DB
+mongoose.connect(MONGODB_URI, {useNewUrlParser: true });
+var Article = models.Article;
+var Comment = models.Comment;
 
 
 // Routes
@@ -34,7 +37,7 @@ app.get('/', (req, res) => {
 
 
 app.get('/articles/:id', (req, res) => {
-    const id = req.params.id;
+    var id = req.params.id;
     Article.findById(id).populate("comments").exec()
         .then((article) => {
             res.render("more", article);
@@ -43,8 +46,8 @@ app.get('/articles/:id', (req, res) => {
 
 
 app.post('/articles/:id/comments', (req, res) => {
-    const articleId = req.params.id;
-    const commentText = req.body.text;
+    var articleId = req.params.id;
+    var commentText = req.body.text;
 
     // Create a comment
     Comment.create({ text: commentText, date: new Date() })
@@ -59,8 +62,8 @@ app.post('/articles/:id/comments', (req, res) => {
 });
 
 app.delete('/articles/:articleId/comments/:commentId', (req, res) => {
-    const articleId = req.params.articleId;
-    const commentId = req.params.commentId;
+    var articleId = req.params.articleId;
+    var commentId = req.params.commentId;
 
     Article.findByIdAndUpdate(articleId, { $pull: { comments: commentId } })
         .then(() => {
@@ -94,5 +97,5 @@ app.post("/api/scrape", (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+var PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server listening at port " + PORT));
